@@ -19,7 +19,25 @@ export default class QuadTree {
 
     // todo
     insert(point) {
-        return true
+        if (!this._boundary.contains(point)) {
+            return false
+        }
+
+        if (this._points.length < this._capacity) {
+            this._points.push(point)
+            return true
+        }
+
+        if (!this._hasChildren) {
+            this._subdivide()
+        }
+        
+        if (this._children[0].insert(point) || this._children[1].insert(point) ||
+            this._children[2].insert(point) || this._children[3].insert(point)) {
+            return true
+        }
+
+        return false
     }
 
     get length() {
@@ -36,6 +54,15 @@ export default class QuadTree {
 
     // todo call if the number of elements is too big
     _subdivide() {
+        const boundary = this._boundary
+        const wHalf = boundary.w / 2
+        const hHalf = boundary.h / 2
+        // console.log(wHalf)
+        this._children.push(new QuadTree(new Rectangle(boundary.x, boundary.y, wHalf, hHalf)))
+        this._children.push(new QuadTree(new Rectangle(boundary.x + wHalf, boundary.y, wHalf, hHalf)))
+        this._children.push(new QuadTree(new Rectangle(boundary.x + wHalf, boundary.y + hHalf, wHalf, hHalf)))
+        this._children.push(new QuadTree(new Rectangle(boundary.x, boundary.y + hHalf, wHalf, hHalf)))
+        this._hasChildren = true
     }
 
     clear() {
