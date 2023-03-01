@@ -16,7 +16,7 @@ function queueUpdates(numTicks) {
         update(gameState.lastTick)
     }
 }
-let b = true
+
 function drawTree(tree) {
     // const rect = tree._boundary
     // context.strokeStyle = "red"
@@ -33,7 +33,6 @@ function drawTree(tree) {
         const rect = tree._boundary
         context.strokeRect(rect.x, rect.y, rect.w, rect.h)
     } else {
-        if (b) console.log("tree")
         drawTree(tree._children[0])
         drawTree(tree._children[1])
         drawTree(tree._children[2])
@@ -59,7 +58,6 @@ function draw(tFrame) {
     })
 
     drawTree(tree)
-    b = false
 }
 
 function collision() {
@@ -70,6 +68,7 @@ function collision() {
 function update(tick) {
 
     collision()
+    // console.log(tree.length)
 
     gameState.rects.forEach((figure)=>{
         figure.x += figure.speed.x
@@ -115,10 +114,15 @@ function setup() {
     // rectangle.setSpeed(5, 5)
     // gameState.rects.push(rectangle)
     for (let i = 0; i < 100; i++) {
-        const rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), 10, 10)
-        rect.setSpeed(random(-5, 5), random(-5, 5))
+        const rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), 5, 5)
+        let speed = 1
+        rect.setSpeed(random(-speed, speed), random(-speed, speed))
         gameState.rects.push(rect)
     }
+
+    // gameState.rects.push(new Rectangle(10, 10, 5, 5))
+    // gameState.rects.push(new Rectangle(20, 10, 5, 5))
+    // gameState.rects.push(new Rectangle(30, 10, 5, 5))
 
     gameState.circles = []
     const circle = new Circle(10, 10, 15)

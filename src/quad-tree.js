@@ -1,7 +1,7 @@
 import Rectangle from './rectangle'
 
 export default class QuadTree {
-    constructor(boundary, capacity = 4) {
+    constructor(boundary, capacity = 1) {
         if (!boundary) {
             throw TypeError('boundary is null or undefined')
         }
@@ -28,6 +28,16 @@ export default class QuadTree {
             return true
         }
 
+        // if (this.length >= 300) return false
+
+        // if (this._boundary.w <= 10) return false
+
+        // if (!this._hasChildren) {
+        //     if (this.length == 1) {
+
+        //     }
+        // }
+
         if (!this._hasChildren) {
             this._subdivide()
         }
@@ -44,6 +54,9 @@ export default class QuadTree {
         let count = this._points.length
         if (this._hasChildren) {
             // handle childrens somehow
+            this._children.forEach(item => {
+                count += item.length
+            })
         }
         return count
     }
@@ -63,6 +76,12 @@ export default class QuadTree {
         this._children.push(new QuadTree(new Rectangle(boundary.x + wHalf, boundary.y + hHalf, wHalf, hHalf)))
         this._children.push(new QuadTree(new Rectangle(boundary.x, boundary.y + hHalf, wHalf, hHalf)))
         this._hasChildren = true
+
+        for(let i = 0; i < this._points.length; i++) {
+            for (let j = 0; j < this._children.length; j++) {
+                this._children[j].insert(this._points[i])
+            }
+        }
     }
 
     clear() {
