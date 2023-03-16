@@ -2,6 +2,9 @@ import Rectangle from "./rectangle"
 import Circle from "./circle"
 import QuadTree from "./quad-tree"
 
+// var isQuadTreeCollision = false
+var collisionFuncPtr = lazyCollision;
+
 const canvas = document.getElementById("cnvs")
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
@@ -60,6 +63,17 @@ function draw(tFrame) {
     drawTree(tree)
 }
 
+function lazyCollision() {
+    for (let i = 0; i < gameState.rects.length - 1; i++) {
+        for (let j = i + 1; j < gameState.rects.length; j++) {
+            if(gameState.rects[i].intersects(gameState.rects[j])) {
+                gameState.rects[i].color = "red"
+                gameState.rects[j].color = "red"
+            }
+        }
+    }
+}
+
 function collision() {
     tree.clear()
     gameState.rects.forEach(rect => tree.insert(rect))
@@ -67,8 +81,10 @@ function collision() {
 
 function update(tick) {
 
-    collision()
+    // collision()
     // console.log(tree.length)
+
+    collisionFuncPtr()
 
     gameState.rects.forEach((figure)=>{
         figure.x += figure.speed.x
