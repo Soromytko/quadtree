@@ -64,11 +64,39 @@ function draw(tFrame) {
 }
 
 function lazyCollision() {
+
+    let reflect = (direction, normal) => {
+        let dot = direction.x * normal.x + direction.y * normal.y
+        return {
+            x: direction.x - 2 * dot * normal.x,
+            y: direction.y - 2 * dot * normal.y,
+        }
+    }
+
+    let normalize = (vector) => {
+        let length = Math.sqrt(vector.x * vector.y)
+        if (length == 0) {
+            return {
+                x: 0,
+                y: 0,
+            }
+        }
+        return {
+            x: vector.x / length,
+            y: vector.y / length,
+        }
+    }
+
     for (let i = 0; i < gameState.rects.length - 1; i++) {
         for (let j = i + 1; j < gameState.rects.length; j++) {
-            if(gameState.rects[i].intersects(gameState.rects[j])) {
-                gameState.rects[i].color = "red"
-                gameState.rects[j].color = "red"
+            let rect1 = gameState.rects[i]
+            let rect2 = gameState.rects[j]
+            if(rect1.intersects(rect2)) {
+                rect1.color = "red"
+                rect2.color = "red"
+                let t = rect1.speed
+                rect1.speed = rect2.speed
+                rect2.speed = t
             }
         }
     }
@@ -130,11 +158,20 @@ function setup() {
     // rectangle.setSpeed(5, 5)
     // gameState.rects.push(rectangle)
     for (let i = 0; i < 100; i++) {
-        const rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), 5, 5)
+        let size = 5 * 2
+        const rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), size, size)
         let speed = 1
         rect.setSpeed(random(-speed, speed), random(-speed, speed))
         gameState.rects.push(rect)
     }
+
+    // let rect = new Rectangle(300, 300, 10, 10)
+    // rect.setSpeed(1, 0.5)
+    // rect.color = "red"
+    // gameState.rects.push(rect)
+    // rect = new Rectangle(600, 300, 10, 10)
+    // rect.setSpeed(-1, 0.5)
+    // gameState.rects.push(rect)
 
     // gameState.rects.push(new Rectangle(10, 10, 5, 5))
     // gameState.rects.push(new Rectangle(20, 10, 5, 5))
