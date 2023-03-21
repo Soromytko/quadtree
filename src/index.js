@@ -57,56 +57,42 @@ function draw(tFrame) {
 
 function lazyCollision() {
 
-    let reflect = (direction, normal) => {
-        let dot = direction.x * normal.x + direction.y * normal.y
-        return {
-            x: direction.x - 2 * dot * normal.x,
-            y: direction.y - 2 * dot * normal.y,
-        }
-    }
-
-    let normalize = (vector) => {
-        let length = Math.sqrt(vector.x * vector.y)
-        if (length == 0) {
-            return {
-                x: 0,
-                y: 0,
-            }
-        }
-        return {
-            x: vector.x / length,
-            y: vector.y / length,
-        }
-    }
-
     // rect vs rect
-    for (let i = 0; i < gameState.rects.length - 1; i++) {
-        for (let j = i + 1; j < gameState.rects.length; j++) {
-            let rect1 = gameState.rects[i]
-            let rect2 = gameState.rects[j]
-            if(rect1.intersects(rect2)) {
-                // rect1.color = "red"
-                // rect2.color = "red"
-                let t = rect1.speed
-                rect1.speed = rect2.speed
-                rect2.speed = t
-            }
-        }
-    }
+    // for (let i = 0; i < gameState.rects.length - 1; i++) {
+    //     for (let j = i + 1; j < gameState.rects.length; j++) {
+    //         let rect1 = gameState.rects[i]
+    //         let rect2 = gameState.rects[j]
+    //         if(rect1.intersects(rect2)) {
+    //             // rect1.color = "red"
+    //             // rect2.color = "red"
+    //             let t = rect1.speed
+    //             rect1.speed = rect2.speed
+    //             rect2.speed = t
+    //         }
+    //     }
+    // }
 
     // circle vs circle
-    for (let i = 0; i < gameState.circles.length - 1; j++) {
+    for (let i = 0; i < gameState.circles.length - 1; i++) {
+        let circle1 = gameState.circles[i]
         for (let j = i + 1; j < gameState.circles.length; j++) {
-
+            let circle2 = gameState.circles[j]
+            if (Math.abs(circle1.x - circle2.x) <= circle1.radius + circle2.radius && 
+                Math.abs(circle1.y - circle2.y) <= circle1.radius + circle2.radius) {
+                let t = circle1.speed
+                circle1.speed = circle2.speed
+                circle2.speed = t  
+                circle1.color = circle2.color = "red"  
+            }
         }
     }
 
     //rect vs circle
-    for (let i = 0; i < gameState.rects.length; i++) {
-        for (let j = 0; j < gameState.circles.length; j++) {
+    // for (let i = 0; i < gameState.rects.length; i++) {
+    //     for (let j = 0; j < gameState.circles.length; j++) {
 
-        }
-    }
+    //     }
+    // }
 }
 
 function quadTreeCollision() {
@@ -119,7 +105,7 @@ function update(tick) {
     // collision()
     // console.log(tree.length)
 
-    // collisionFuncPtr()
+    collisionFuncPtr()
 
     gameState.rects.forEach((figure)=>{
         figure.x += figure.speed.x
@@ -138,7 +124,7 @@ function update(tick) {
         if (circle.x - circle.radius <= 0) circle.speed.x = Math.abs(circle.speed.x)
         else if (circle.x + circle.radius >= canvas.width) circle.speed.x = -Math.abs(circle.speed.x)
         if (circle.y - circle.radius <= 0) circle.speed.y = Math.abs(circle.speed.y)
-        else if (circle.y + circle.radisu >= canvas.height) circle.y = -Math.abs(circle.speed.y)
+        else if (circle.y + circle.radius >= canvas.height) circle.speed.y = -Math.abs(circle.speed.y)
     })
 }
 
@@ -177,16 +163,16 @@ function setup() {
     // }
     gameState.rects = []
     gameState.circles = []
-    for(let i = 0; i < 10; i++) {
+    for(let i = 0; i < 100; i++) {
         let rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), 10, 10)
         let circle = new Circle(random(0, canvas.width), random(0, canvas.height), 5)
-
+        
         let speed = 3
 
         rect.setSpeed(random(-speed, speed), random(-speed, speed))
         circle.setSpeed(random(-speed, speed), random(-speed, speed))
 
-        gameState.rects.push(rect)
+        //gameState.rects.push(rect)
         gameState.circles.push(circle)
     }
 
