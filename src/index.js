@@ -1,6 +1,7 @@
 import Rectangle from "./rectangle"
 import Circle from "./circle"
 import QuadTree from "./quad-tree"
+import Polygon from "./polygon";
 
 // var isQuadTreeCollision = false
 var collisionFuncPtr = lazyCollision;
@@ -52,6 +53,22 @@ function draw(tFrame) {
         context.closePath()
     })
 
+    gameState.triangles.forEach(triangle => {
+        context.beginPath()
+        context.fillStyle = triangle.color
+        context.moveTo(triangle.points[0].x + triangle.x, triangle.points[0].y + triangle.y)
+        triangle.points.forEach(point => {
+            context.lineTo(point.x + triangle.x, point.y + triangle.y)
+        })
+        context.fill()
+        context.closePath()
+    })
+
+    context.beginPath()
+    context.fillStyle = "red"
+    context.fillRect(gameState.point.x, gameState.point.y, 5, 5)
+    context.closePath()
+
     // drawTree(tree)
 }
 
@@ -83,6 +100,25 @@ function lazyCollision() {
                 circle1.speed = circle2.speed
                 circle2.speed = t  
                 circle1.color = circle2.color = "red"  
+            }
+        }
+    }
+
+    // gameState.point.x = 50
+    // gameState.point.y = 0
+    // gameState.triangles[0].contains(gameState.point)
+    // return 
+
+    //triangle vs triangle
+    for (let i = 0; i < gameState.triangles.length - 1; i++) {
+        for (let j = i + 1; j < gameState.triangles.length; j++) {
+            let triangle1 = gameState.triangles[i]
+            let triangle2 = gameState.triangles[j]
+            if (triangle1.intersects(triangle2)) {
+                let t = triangle1.speed
+                triangle1.speed = triangle2.speed
+                triangle2.speed = t  
+                triangle1.color = triangle2.color = "red"
             }
         }
     }
@@ -126,9 +162,26 @@ function update(tick) {
         if (circle.y - circle.radius <= 0) circle.speed.y = Math.abs(circle.speed.y)
         else if (circle.y + circle.radius >= canvas.height) circle.speed.y = -Math.abs(circle.speed.y)
     })
+
+    gameState.triangles.forEach(triangle => {
+        triangle.x += triangle.speed.x
+        triangle.y += triangle.speed.y
+
+        if (triangle.x - triangle.size / 2 <= 0) triangle.speed.x = Math.abs(triangle.speed.x)
+        else if (triangle.x + triangle.size / 2 >= canvas.width) triangle.speed.x = -Math.abs(triangle.speed.x)
+        if (triangle.y - triangle.size / 2 <= 0) triangle.speed.y = Math.abs(triangle.speed.y)
+        else if (triangle.y + triangle.size / 2 >= canvas.height) triangle.speed.y = -Math.abs(triangle.speed.y)
+    })
 }
 
 function run(tFrame) {
+    canvas.addEventListener('mousemove', (e) =>
+    {
+        if(gameState.point) {
+            gameState.point.x= e.pageX
+            gameState.point.y = e.pageY
+        }
+    }, false)
     gameState.stopCycle = window.requestAnimationFrame(run)
 
     const nextTick = gameState.lastTick + gameState.tickLength
@@ -161,45 +214,28 @@ function setup() {
     //     gameState.figures.push(new Circle(random(0, canvas.width), random(0, canvas.height), 5))
     //     gameStates.figure.push(new Rectangle)
     // }
+    gameState.point = {x: 50, y: 50}
     gameState.rects = []
     gameState.circles = []
-    for(let i = 0; i < 100; i++) {
+    gameState.triangles = []
+    for(let i = 0; i < 10; i++) {
         let rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), 10, 10)
-        let circle = new Circle(random(0, canvas.width), random(0, canvas.height), 5)
+        let circle = new Circle(random(0, canvas.width), random(0, canvas.height), 10)
+        let triangle = new Polygon(random(0, canvas.width), random(0, canvas.height), 3)
         
         let speed = 3
 
         rect.setSpeed(random(-speed, speed), random(-speed, speed))
         circle.setSpeed(random(-speed, speed), random(-speed, speed))
-
+        triangle.setSpeed(random(-speed, speed), random(-speed, speed))
+        
         //gameState.rects.push(rect)
         gameState.circles.push(circle)
+        gameState.triangles.push(triangle)
     }
 
-    // gameState.rects = []
-    // // const rectangle = new Rectangle(10, 10, 30, 30)
-    // // rectangle.setSpeed(5, 5)
-    // // gameState.rects.push(rectangle)
-    // for (let i = 0; i < 100; i++) {
-    //     let size = 5
-    //     const rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), size, size)
-    //     let speed = 1
-    //     rect.setSpeed(random(-speed, speed), random(-speed, speed))
-    //     gameState.rects.push(rect)
-    // }
-
-    // let rect = new Rectangle(300, 300, 10, 10)
-    // rect.setSpeed(1, 0.5)
-    // rect.color = "red"
-    // gameState.rects.push(rect)
-    // rect = new Rectangle(600, 300, 10, 10)
-    // rect.setSpeed(-1, 0.5)
-    // gameState.rects.push(rect)
-
-    // gameState.rects.push(new Rectangle(10, 10, 5, 5))
-    // gameState.rects.push(new Rectangle(20, 10, 5, 5))
-    // gameState.rects.push(new Rectangle(30, 10, 5, 5))
-
+    // gameState.triangles.push(new Polygon(50, 50, 3))
+    // gameState.triangles.push(new Polygon(50, 700, 3))
 
 }
 
