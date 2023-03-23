@@ -66,7 +66,7 @@ function draw(tFrame) {
 
     context.beginPath()
     context.fillStyle = "red"
-    context.fillRect(gameState.point.x, gameState.point.y, 5, 5)
+    context.fillRect(gameState.cursor.x, gameState.cursor.y, 5, 5)
     context.closePath()
 
     // drawTree(tree)
@@ -104,9 +104,9 @@ function lazyCollision() {
         }
     }
 
-    // gameState.point.x = 50
-    // gameState.point.y = 0
-    // gameState.triangles[0].contains(gameState.point)
+    // gameState.cursor.x = 50
+    // gameState.cursor.y = 0
+    // gameState.triangles[0].contains(gameState.cursor)
     // return 
 
     //triangle vs triangle
@@ -123,12 +123,32 @@ function lazyCollision() {
         }
     }
 
-    //rect vs circle
-    // for (let i = 0; i < gameState.rects.length; i++) {
-    //     for (let j = 0; j < gameState.circles.length; j++) {
+    let vectorProjection = (vector, target) => {
+        if (target.x == 0 && target.y == 0) return 0
+        let dot = vector.x * target.x + vector.y * target.y
+        return dot / Math.sqrt(target.x * target.x + target.y * target.y) //dot / Math.sqrt(target.x * target.x + target.y * target.y)
+    }
 
-    //     }
-    // }
+    // circle vs triangle
+    for (let i = 0; i < gameState.circles.length; i++) {
+        let circle = gameState.circles[i]
+        for (let j = 0; j < gameState.triangles.length; j++) {
+            let triangle = gameState.triangles[j]
+
+            let v1 = {x: circle.x - triangle.x, y: circle.y - triangle.y}
+            let v2 = triangle._vectors[0]
+            let project = vectorProjection(v1, v2)
+            let projectPoint = {x: v2.x * project, y: v2.y * project}
+
+            // If point onto vector
+             if (projectPoint.x <= v2.x && projectPoint.y <= v2.y) {
+                if (Math.abs(projectPoint.x - circle.x) <= circle.radius && Math.abs(projectPoint.y - circle.y) <= circle.radius) {
+                    circle.color = "red"
+                }
+             }
+        }
+    }
+
 }
 
 function quadTreeCollision() {
@@ -175,13 +195,7 @@ function update(tick) {
 }
 
 function run(tFrame) {
-    canvas.addEventListener('mousemove', (e) =>
-    {
-        if(gameState.point) {
-            gameState.point.x= e.pageX
-            gameState.point.y = e.pageY
-        }
-    }, false)
+    canvas.addEventListener('mousemove', (e) => gameState.cursor = {x: e.pageX, y: e.pageY}, false)
     gameState.stopCycle = window.requestAnimationFrame(run)
 
     const nextTick = gameState.lastTick + gameState.tickLength
@@ -214,7 +228,7 @@ function setup() {
     //     gameState.figures.push(new Circle(random(0, canvas.width), random(0, canvas.height), 5))
     //     gameStates.figure.push(new Rectangle)
     // }
-    gameState.point = {x: 50, y: 50}
+    gameState.cursor = {x: 50, y: 50}
     gameState.rects = []
     gameState.circles = []
     gameState.triangles = []

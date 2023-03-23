@@ -11,4 +11,8 @@ export default class Circle {
     setSpeed(x, y) {
         this.speed = {x, y}
     }
+
+    contains(point) {
+        return point.x - this.x <= radius && point.y - this.y <= radius
+    }
 }
