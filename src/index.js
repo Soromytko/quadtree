@@ -77,6 +77,22 @@ function draw(tFrame) {
     // drawTree(tree)
 }
 
+//the algorithm is borrowed from:
+//https://math.stackexchange.com/questions/311921/get-location-of-vector-circle-intersection
+function isCircleTriangleIntersects(circle, triangle) {
+    for (let i = 0; i < triangle.points.length; i++) {
+        let p = {x: triangle.points[i].x, y: triangle.points[i].y}
+        let v = triangle._vectors[i]
+
+        let a = v.x * v.x + v.y * v.y;
+        let b = 2 * v.x * (p.x - circle.x) + 2 * v.y * (p.y - circle.y)
+        let c = Math.pow(p.x - circle.x, 2) + Math.pow(p.y - circle.y, 2) - circle.radius * circle.radius
+
+        
+    }
+    
+}
+
 function lazyCollision() {
 
     // rect vs rect
@@ -144,8 +160,6 @@ function lazyCollision() {
         let circle = gameState.circles[i]
         circle.x = gameState.cursor.x
         circle.y = gameState.cursor.y
-        let b = false
-
         for (let j = 0; j < gameState.triangles.length; j++) {
             let triangle = gameState.triangles[j]
 
