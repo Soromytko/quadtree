@@ -64,9 +64,14 @@ function draw(tFrame) {
         context.closePath()
     })
 
+    // context.beginPath()
+    // context.fillStyle = "red"
+    // context.fillRect(gameState.cursor.x, gameState.cursor.y, 5, 5)
+    // context.closePath()
+
     context.beginPath()
     context.fillStyle = "red"
-    context.fillRect(gameState.cursor.x, gameState.cursor.y, 5, 5)
+    context.fillRect(gameState.debugPoint.x, gameState.debugPoint.y, 5, 5)
     context.closePath()
 
     // drawTree(tree)
@@ -126,26 +131,50 @@ function lazyCollision() {
     let vectorProjection = (vector, target) => {
         if (target.x == 0 && target.y == 0) return 0
         let dot = vector.x * target.x + vector.y * target.y
-        return dot / Math.sqrt(target.x * target.x + target.y * target.y) //dot / Math.sqrt(target.x * target.x + target.y * target.y)
+        let norm = target.x * target.x + target.y * target.y
+        return {
+            x: target.x * dot / norm,
+            y: target.y * dot / norm
+        }
+        // return dot / (target.x * target.x + target.y * target.y) //dot / Math.sqrt(target.x * target.x + target.y * target.y)
     }
 
     // circle vs triangle
     for (let i = 0; i < gameState.circles.length; i++) {
         let circle = gameState.circles[i]
+        circle.x = gameState.cursor.x
+        circle.y = gameState.cursor.y
+        let b = false
+
         for (let j = 0; j < gameState.triangles.length; j++) {
             let triangle = gameState.triangles[j]
 
-            let v1 = {x: circle.x - triangle.x, y: circle.y - triangle.y}
-            let v2 = triangle._vectors[0]
-            let project = vectorProjection(v1, v2)
-            let projectPoint = {x: v2.x * project, y: v2.y * project}
+            
+            // for(let k = 0; k < 1; k++)
+            for(let k = 0; k < triangle._vectors.length; k++)
+            // let k = 1
+            {
+                let v1 = {x: circle.x - triangle.x - triangle.points[k].x, y: circle.y - triangle.y - triangle.points[k].y}
+                let v2 = triangle._vectors[k]
+                let project = vectorProjection(v1, v2)
 
-            // If point onto vector
-             if (projectPoint.x <= v2.x && projectPoint.y <= v2.y) {
-                if (Math.abs(projectPoint.x - circle.x) <= circle.radius && Math.abs(projectPoint.y - circle.y) <= circle.radius) {
-                    circle.color = "red"
+                gameState.debugPoint.x = project.x + triangle.x + triangle.points[k].x
+                gameState.debugPoint.y = project.y + triangle.y + triangle.points[k].y
+
+                
+                circle.color = "green"
+                // If point onto vector
+                let h = {x: v2.x - project.x, y: v2.y - project.y}
+                if (Math.sign(h.x) == Math.sign(v2.x) && Math.abs(v2.x) >= Math.abs(h.x) &&
+                    Math.sign(h.y) == Math.sign(v2.y) && Math.abs(v2.y) >= Math.abs(h.y)) {
+                    if (Math.abs(gameState.debugPoint.x - circle.x) <= circle.radius && Math.abs(gameState.debugPoint.y - circle.y) <= circle.radius) {
+                        circle.color = "pink"
+                        b = true
+                        break
+                    }
                 }
-             }
+            }
+            if (b === true) break
         }
     }
 
@@ -173,15 +202,15 @@ function update(tick) {
         else if (figure.y >= canvas.height) figure.speed.y = -Math.abs(figure.speed.y)
     })
 
-    gameState.circles.forEach(circle => {
-        circle.x += circle.speed.x
-        circle.y += circle.speed.y
+    // gameState.circles.forEach(circle => {
+    //     circle.x += circle.speed.x
+    //     circle.y += circle.speed.y
 
-        if (circle.x - circle.radius <= 0) circle.speed.x = Math.abs(circle.speed.x)
-        else if (circle.x + circle.radius >= canvas.width) circle.speed.x = -Math.abs(circle.speed.x)
-        if (circle.y - circle.radius <= 0) circle.speed.y = Math.abs(circle.speed.y)
-        else if (circle.y + circle.radius >= canvas.height) circle.speed.y = -Math.abs(circle.speed.y)
-    })
+    //     if (circle.x - circle.radius <= 0) circle.speed.x = Math.abs(circle.speed.x)
+    //     else if (circle.x + circle.radius >= canvas.width) circle.speed.x = -Math.abs(circle.speed.x)
+    //     if (circle.y - circle.radius <= 0) circle.speed.y = Math.abs(circle.speed.y)
+    //     else if (circle.y + circle.radius >= canvas.height) circle.speed.y = -Math.abs(circle.speed.y)
+    // })
 
     gameState.triangles.forEach(triangle => {
         triangle.x += triangle.speed.x
@@ -229,10 +258,11 @@ function setup() {
     //     gameStates.figure.push(new Rectangle)
     // }
     gameState.cursor = {x: 50, y: 50}
+    gameState.debugPoint = {x: 0, y: 0}
     gameState.rects = []
     gameState.circles = []
     gameState.triangles = []
-    for(let i = 0; i < 10; i++) {
+    for(let i = 0; i < 0; i++) {
         let rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), 10, 10)
         let circle = new Circle(random(0, canvas.width), random(0, canvas.height), 10)
         let triangle = new Polygon(random(0, canvas.width), random(0, canvas.height), 3)
@@ -248,8 +278,9 @@ function setup() {
         gameState.triangles.push(triangle)
     }
 
-    // gameState.triangles.push(new Polygon(50, 50, 3))
+    gameState.triangles.push(new Polygon(50, 50, 3))
     // gameState.triangles.push(new Polygon(50, 700, 3))
+    gameState.circles.push(new Circle(random(0, canvas.width), random(0, canvas.height), 10))
 
 }
 

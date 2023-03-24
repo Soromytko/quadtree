@@ -27,7 +27,7 @@ export default class Polygon {
         })
         
         let point = {x: -this.points[0].x, y: -this.points[0].y}
-        console.log(this.points, this._vectors, point)
+        // console.log(this.points, this._vectors, point)
     }
 
     setSpeed(x, y) {
