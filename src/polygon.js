@@ -12,8 +12,9 @@ export default class Polygon {
         }
 
         this.speed = {x: 0, y: 0}
-        this.color = "black"
-
+        this.color = "green"
+        this.health = 3
+        
         this._vectors = [] // vectors of sides (http://cyber-code.ru/tochka_v_treugolnike/?ysclid=lfiovplcnc106423362)
         for (let i = 0; i < this.points.length - 1; i++) {
             this._vectors.push({
@@ -27,12 +28,17 @@ export default class Polygon {
         })
         
         let point = {x: -this.points[0].x, y: -this.points[0].y}
-        // console.log(this.points, this._vectors, point)
     }
 
     setSpeed(x, y) {
         this.speed.x = x
         this.speed.y = y
+    }
+
+    takeDamage() {
+        this.health -= 1
+        if (this.health == 2) this.color = "yellow"
+        else if (this.health == 1) this.color = "red"
     }
 
     //Алгоритм определения положения точки относительно вектора

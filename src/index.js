@@ -110,6 +110,15 @@ function isCirclePolygonIntersects(circle, triangle) {
     return triangle.contains(circle)
 }
 
+function resolveCollision(figure1, figure2) {
+    let speed = figure1.speed
+    figure1.speed = figure2.speed
+    figure2.speed = speed
+
+    figure1.takeDamage()
+    figure2.takeDamage()
+}
+
 function lazyCollision() {
     // circle vs circle
     for (let i = 0; i < gameState.circles.length - 1; i++) {
@@ -118,10 +127,15 @@ function lazyCollision() {
             let circle2 = gameState.circles[j]
             if (Math.abs(circle1.x - circle2.x) <= circle1.radius + circle2.radius && 
                 Math.abs(circle1.y - circle2.y) <= circle1.radius + circle2.radius) {
-                let t = circle1.speed
-                circle1.speed = circle2.speed
-                circle2.speed = t  
-                circle1.color = circle2.color = "red"  
+                resolveCollision(circle1, circle2)
+                if (circle1.health <= 0) {
+                    gameState.circles.splice(i, 1)
+                    i -= 0
+                }
+                if (circle2.health <= 0) {
+                    gameState.circles.splice(j, 1)
+                    j -= 1
+                }
             }
         }
     }
@@ -129,13 +143,18 @@ function lazyCollision() {
     //polygon vs polygon
     for (let i = 0; i < gameState.polygons.length - 1; i++) {
         for (let j = i + 1; j < gameState.polygons.length; j++) {
-            let triangle1 = gameState.polygons[i]
-            let triangle2 = gameState.polygons[j]
-            if (triangle1.intersects(triangle2)) {
-                let t = triangle1.speed
-                triangle1.speed = triangle2.speed
-                triangle2.speed = t  
-                triangle1.color = triangle2.color = "red"
+            let polygon1 = gameState.polygons[i]
+            let polygon2 = gameState.polygons[j]
+            if (polygon1.intersects(polygon2)) {
+                resolveCollision(polygon1, polygon2)
+                if (polygon1.health <= 0) {
+                    gameState.polygons.splice(i, 1)
+                    i -= 1
+                }
+                if (polygon2.health <= 0) {
+                    gameState.polygons.splice(j, 1)
+                    j -= 1
+                }
             }
         }
     }
@@ -144,17 +163,20 @@ function lazyCollision() {
     for (let i = 0; i < gameState.circles.length; i++) {
         let circle = gameState.circles[i]
         for (let j = 0; j < gameState.polygons.length; j++) {
-            let triangle = gameState.polygons[j]
-            if (isCirclePolygonIntersects(circle, triangle)) {
-                circle.color = "red"
-                triangle.color = "red"
-                let t = circle.speed
-                circle.speed = triangle.speed
-                triangle.speed = t
+            let polygon = gameState.polygons[j]
+            if (isCirclePolygonIntersects(circle, polygon)) {
+                resolveCollision(circle, polygon)
+                if (circle.health <= 0) {
+                    gameState.circles.splice(i, 1)
+                    i -= 1
+                }
+                if (polygon.health <= 0) {
+                    gameState.polygons.splice(j, 1)
+                    j -= 1
+                }
             }
         }
     }
-
 }
 
 function quadTreeCollision() {
@@ -189,14 +211,14 @@ function update(tick) {
         else if (circle.y + circle.radius >= canvas.height) circle.speed.y = -Math.abs(circle.speed.y)
     })
 
-    gameState.polygons.forEach(triangle => {
-        triangle.x += triangle.speed.x
-        triangle.y += triangle.speed.y
+    gameState.polygons.forEach(polygon => {
+        polygon.x += polygon.speed.x
+        polygon.y += polygon.speed.y
 
-        if (triangle.x - triangle.size / 2 <= 0) triangle.speed.x = Math.abs(triangle.speed.x)
-        else if (triangle.x + triangle.size / 2 >= canvas.width) triangle.speed.x = -Math.abs(triangle.speed.x)
-        if (triangle.y - triangle.size / 2 <= 0) triangle.speed.y = Math.abs(triangle.speed.y)
-        else if (triangle.y + triangle.size / 2 >= canvas.height) triangle.speed.y = -Math.abs(triangle.speed.y)
+        if (polygon.x - polygon.size / 2 <= 0) polygon.speed.x = Math.abs(polygon.speed.x)
+        else if (polygon.x + polygon.size / 2 >= canvas.width) polygon.speed.x = -Math.abs(polygon.speed.x)
+        if (polygon.y - polygon.size / 2 <= 0) polygon.speed.y = Math.abs(polygon.speed.y)
+        else if (polygon.y + polygon.size / 2 >= canvas.height) polygon.speed.y = -Math.abs(polygon.speed.y)
     })
 }
 
