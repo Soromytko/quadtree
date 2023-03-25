@@ -5,7 +5,7 @@ export default class Circle {
         this.radius = radius
         
         this.color = "green"
-        this.direction = {x: 0, y: 0}
+        this.speed = {x: 0, y: 0}
     }
 
     setSpeed(x, y) {

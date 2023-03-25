@@ -53,7 +53,7 @@ function draw(tFrame) {
         context.closePath()
     })
 
-    gameState.triangles.forEach(triangle => {
+    gameState.polygons.forEach(triangle => {
         context.beginPath()
         context.fillStyle = triangle.color
         context.moveTo(triangle.points[0].x + triangle.x, triangle.points[0].y + triangle.y)
@@ -79,37 +79,38 @@ function draw(tFrame) {
 
 //the algorithm is borrowed from:
 //https://math.stackexchange.com/questions/311921/get-location-of-vector-circle-intersection
-function isCircleTriangleIntersects(circle, triangle) {
+function isCirclePolygonIntersects(circle, triangle) {
     for (let i = 0; i < triangle.points.length; i++) {
         let p = {x: triangle.points[i].x, y: triangle.points[i].y}
         let v = triangle._vectors[i]
+
+        p.x += triangle.x
+        p.y += triangle.y
 
         let a = v.x * v.x + v.y * v.y;
         let b = 2 * v.x * (p.x - circle.x) + 2 * v.y * (p.y - circle.y)
         let c = Math.pow(p.x - circle.x, 2) + Math.pow(p.y - circle.y, 2) - circle.radius * circle.radius
 
+        let d = b * b - 4 * a * c
+
+        if (d < 0) {
+            continue
+        }
         
+        d = Math.sqrt(d)
+        // let t1 = 2 * c / (-b + d)
+        let t1 = (-b - d) / (2 * a)
+        let t2 = (-b + d) / (2 * a)
+
+        if (t1 > 0 && t1 < 1 || t2 > 0 && t2 < 1) {
+            return true
+        }
     }
-    
+
+    return triangle.contains(circle)
 }
 
 function lazyCollision() {
-
-    // rect vs rect
-    // for (let i = 0; i < gameState.rects.length - 1; i++) {
-    //     for (let j = i + 1; j < gameState.rects.length; j++) {
-    //         let rect1 = gameState.rects[i]
-    //         let rect2 = gameState.rects[j]
-    //         if(rect1.intersects(rect2)) {
-    //             // rect1.color = "red"
-    //             // rect2.color = "red"
-    //             let t = rect1.speed
-    //             rect1.speed = rect2.speed
-    //             rect2.speed = t
-    //         }
-    //     }
-    // }
-
     // circle vs circle
     for (let i = 0; i < gameState.circles.length - 1; i++) {
         let circle1 = gameState.circles[i]
@@ -125,16 +126,11 @@ function lazyCollision() {
         }
     }
 
-    // gameState.cursor.x = 50
-    // gameState.cursor.y = 0
-    // gameState.triangles[0].contains(gameState.cursor)
-    // return 
-
-    //triangle vs triangle
-    for (let i = 0; i < gameState.triangles.length - 1; i++) {
-        for (let j = i + 1; j < gameState.triangles.length; j++) {
-            let triangle1 = gameState.triangles[i]
-            let triangle2 = gameState.triangles[j]
+    //polygon vs polygon
+    for (let i = 0; i < gameState.polygons.length - 1; i++) {
+        for (let j = i + 1; j < gameState.polygons.length; j++) {
+            let triangle1 = gameState.polygons[i]
+            let triangle2 = gameState.polygons[j]
             if (triangle1.intersects(triangle2)) {
                 let t = triangle1.speed
                 triangle1.speed = triangle2.speed
@@ -144,51 +140,18 @@ function lazyCollision() {
         }
     }
 
-    let vectorProjection = (vector, target) => {
-        if (target.x == 0 && target.y == 0) return 0
-        let dot = vector.x * target.x + vector.y * target.y
-        let norm = target.x * target.x + target.y * target.y
-        return {
-            x: target.x * dot / norm,
-            y: target.y * dot / norm
-        }
-        // return dot / (target.x * target.x + target.y * target.y) //dot / Math.sqrt(target.x * target.x + target.y * target.y)
-    }
-
-    // circle vs triangle
+    // circle vs polygon
     for (let i = 0; i < gameState.circles.length; i++) {
         let circle = gameState.circles[i]
-        circle.x = gameState.cursor.x
-        circle.y = gameState.cursor.y
-        for (let j = 0; j < gameState.triangles.length; j++) {
-            let triangle = gameState.triangles[j]
-
-            
-            // for(let k = 0; k < 1; k++)
-            for(let k = 0; k < triangle._vectors.length; k++)
-            // let k = 1
-            {
-                let v1 = {x: circle.x - triangle.x - triangle.points[k].x, y: circle.y - triangle.y - triangle.points[k].y}
-                let v2 = triangle._vectors[k]
-                let project = vectorProjection(v1, v2)
-
-                gameState.debugPoint.x = project.x + triangle.x + triangle.points[k].x
-                gameState.debugPoint.y = project.y + triangle.y + triangle.points[k].y
-
-                
-                circle.color = "green"
-                // If point onto vector
-                let h = {x: v2.x - project.x, y: v2.y - project.y}
-                if (Math.sign(h.x) == Math.sign(v2.x) && Math.abs(v2.x) >= Math.abs(h.x) &&
-                    Math.sign(h.y) == Math.sign(v2.y) && Math.abs(v2.y) >= Math.abs(h.y)) {
-                    if (Math.abs(gameState.debugPoint.x - circle.x) <= circle.radius && Math.abs(gameState.debugPoint.y - circle.y) <= circle.radius) {
-                        circle.color = "pink"
-                        b = true
-                        break
-                    }
-                }
+        for (let j = 0; j < gameState.polygons.length; j++) {
+            let triangle = gameState.polygons[j]
+            if (isCirclePolygonIntersects(circle, triangle)) {
+                circle.color = "red"
+                triangle.color = "red"
+                let t = circle.speed
+                circle.speed = triangle.speed
+                triangle.speed = t
             }
-            if (b === true) break
         }
     }
 
@@ -216,17 +179,17 @@ function update(tick) {
         else if (figure.y >= canvas.height) figure.speed.y = -Math.abs(figure.speed.y)
     })
 
-    // gameState.circles.forEach(circle => {
-    //     circle.x += circle.speed.x
-    //     circle.y += circle.speed.y
+    gameState.circles.forEach(circle => {
+        circle.x += circle.speed.x
+        circle.y += circle.speed.y
 
-    //     if (circle.x - circle.radius <= 0) circle.speed.x = Math.abs(circle.speed.x)
-    //     else if (circle.x + circle.radius >= canvas.width) circle.speed.x = -Math.abs(circle.speed.x)
-    //     if (circle.y - circle.radius <= 0) circle.speed.y = Math.abs(circle.speed.y)
-    //     else if (circle.y + circle.radius >= canvas.height) circle.speed.y = -Math.abs(circle.speed.y)
-    // })
+        if (circle.x - circle.radius <= 0) circle.speed.x = Math.abs(circle.speed.x)
+        else if (circle.x + circle.radius >= canvas.width) circle.speed.x = -Math.abs(circle.speed.x)
+        if (circle.y - circle.radius <= 0) circle.speed.y = Math.abs(circle.speed.y)
+        else if (circle.y + circle.radius >= canvas.height) circle.speed.y = -Math.abs(circle.speed.y)
+    })
 
-    gameState.triangles.forEach(triangle => {
+    gameState.polygons.forEach(triangle => {
         triangle.x += triangle.speed.x
         triangle.y += triangle.speed.y
 
@@ -257,7 +220,14 @@ function stopGame(handle) {
     window.cancelAnimationFrame(handle);
 }
 
-var random = (min, max) => Math.floor(Math.random() * (max - min) + min)
+var random = (min, max) => (Math.random() * (max - min) + min)
+function rendomWithExcluded(min, max, excludedValue) {
+    while(true) {
+        let rand = random(min, max)
+        if (rand != excludedValue)
+            return rand
+    }
+}
 
 function setup() {
     canvas.width = window.innerWidth
@@ -275,27 +245,31 @@ function setup() {
     gameState.debugPoint = {x: 0, y: 0}
     gameState.rects = []
     gameState.circles = []
-    gameState.triangles = []
-    for(let i = 0; i < 0; i++) {
+    gameState.polygons = []
+    for(let i = 0; i < 10; i++) {
         let rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), 10, 10)
         let circle = new Circle(random(0, canvas.width), random(0, canvas.height), 10)
-        let triangle = new Polygon(random(0, canvas.width), random(0, canvas.height), 3)
+        let triangle = new Polygon(random(0, canvas.width), random(0, canvas.height), 3, 10)
+        let pentagon = new Polygon(random(0, canvas.width), random(0, canvas.height), 5, 10)
         
         let speed = 3
 
-        rect.setSpeed(random(-speed, speed), random(-speed, speed))
-        circle.setSpeed(random(-speed, speed), random(-speed, speed))
-        triangle.setSpeed(random(-speed, speed), random(-speed, speed))
+        rect.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
+        circle.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
+        triangle.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
+        pentagon.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
         
         //gameState.rects.push(rect)
         gameState.circles.push(circle)
-        gameState.triangles.push(triangle)
+        gameState.polygons.push(triangle)
+        gameState.polygons.push(pentagon)
     }
 
-    gameState.triangles.push(new Polygon(50, 50, 3))
-    // gameState.triangles.push(new Polygon(50, 700, 3))
-    gameState.circles.push(new Circle(random(0, canvas.width), random(0, canvas.height), 10))
-
+    // gameState.polygons.push(new Polygon(50, 50, 3))
+    // gameState.polygons[0].setSpeed(1, 0)
+    // gameState.polygons.push(new Polygon(50, 700, 3))
+    // gameState.circles.push(new Circle(100, 50, 10))
+    // gameState.circles[0].setSpeed(-1, 0)
 }
 
 setup();

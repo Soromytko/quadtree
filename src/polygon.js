@@ -1,9 +1,9 @@
 export default class Polygon {
-    constructor(x, y, angleCount) {
+    constructor(x, y, angleCount, size) {
         this.x = x
         this.y = y
         this.points = []
-        this.size = 20
+        this.size = size
         for (let i = 0; i < angleCount; i++) {
             let angle = i * (2 * Math.PI / angleCount)
             angle -= Math.PI / 2
