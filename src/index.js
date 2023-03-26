@@ -3,8 +3,8 @@ import Circle from "./circle"
 import QuadTree from "./quad-tree"
 import Polygon from "./polygon";
 
-// var isQuadTreeCollision = false
-var collisionFuncPtr = lazyCollision;
+var isQuadTreeCollision = true
+var collisionFuncPtr = isQuadTreeCollision ? quadTreeCollision : lazyCollision
 
 const canvas = document.getElementById("cnvs")
 canvas.width = window.innerWidth
@@ -74,7 +74,7 @@ function draw(tFrame) {
     context.fillRect(gameState.debugPoint.x, gameState.debugPoint.y, 5, 5)
     context.closePath()
 
-    // drawTree(tree)
+    drawTree(tree)
 }
 
 //the algorithm is borrowed from:
@@ -181,7 +181,8 @@ function lazyCollision() {
 
 function quadTreeCollision() {
     tree.clear()
-    gameState.rects.forEach(rect => tree.insert(rect))
+    gameState.circles.forEach(circle => tree.insert(circle))
+    gameState.polygons.forEach(polygon => tree.insert(polygon))
 }
 
 function update(tick) {
@@ -224,6 +225,7 @@ function update(tick) {
 
 function run(tFrame) {
     canvas.addEventListener('mousemove', (e) => gameState.cursor = {x: e.pageX, y: e.pageY}, false)
+
     gameState.stopCycle = window.requestAnimationFrame(run)
 
     const nextTick = gameState.lastTick + gameState.tickLength
@@ -252,46 +254,39 @@ function rendomWithExcluded(min, max, excludedValue) {
 }
 
 function setup() {
+    canvas.addEventListener("click", (e) => {
+        gameState.circles.push(new Circle(e.offsetX, e.offsetY, 10))
+    }, false)
+
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     gameState.lastTick = performance.now()
     gameState.lastRender = gameState.lastTick
     gameState.tickLength = 15 //ms
 
-    // gameState.figures = []
-    // for(let i = 0; i < 10; i++) {
-    //     gameState.figures.push(new Circle(random(0, canvas.width), random(0, canvas.height), 5))
-    //     gameStates.figure.push(new Rectangle)
-    // }
     gameState.cursor = {x: 50, y: 50}
     gameState.debugPoint = {x: 0, y: 0}
     gameState.rects = []
     gameState.circles = []
     gameState.polygons = []
-    for(let i = 0; i < 10; i++) {
+    for(let i = 0; i < 0; i++) {
         let rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), 10, 10)
         let circle = new Circle(random(0, canvas.width), random(0, canvas.height), 10)
         let triangle = new Polygon(random(0, canvas.width), random(0, canvas.height), 3, 10)
         let pentagon = new Polygon(random(0, canvas.width), random(0, canvas.height), 5, 10)
         
-        let speed = 3
+        let speed = 0
 
         rect.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
         circle.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
         triangle.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
         pentagon.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
         
-        //gameState.rects.push(rect)
+        // gameState.rects.push(rect)
         gameState.circles.push(circle)
         gameState.polygons.push(triangle)
         gameState.polygons.push(pentagon)
     }
-
-    // gameState.polygons.push(new Polygon(50, 50, 3))
-    // gameState.polygons[0].setSpeed(1, 0)
-    // gameState.polygons.push(new Polygon(50, 700, 3))
-    // gameState.circles.push(new Circle(100, 50, 10))
-    // gameState.circles[0].setSpeed(-1, 0)
 }
 
 setup();

@@ -41,4 +41,9 @@ export default class Rectangle {
             && (this.y < rect.y + rect.h)
             && (rect.y < this.y + this.w)
     }
+
+    containsRect(rect) {
+        return rect.left >= this.left && rect.right <= this.right &&
+        rect.bottom <= this.bottom && rect.top >= this.top
+    }
 }

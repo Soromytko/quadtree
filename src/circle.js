@@ -1,3 +1,5 @@
+import Rectangle from "./rectangle"
+
 export default class Circle {
     constructor(x, y, radius) {
         this.x = x
@@ -7,6 +9,8 @@ export default class Circle {
         this.color = "green"
         this.health = 3
         this.speed = {x: 0, y: 0}
+
+        this.rect = new Rectangle(0, 0, this.radius * 2, this.radius * 2)
     }
 
     setSpeed(x, y) {

@@ -1,3 +1,5 @@
+import Rectangle from "./rectangle"
+
 export default class Polygon {
     constructor(x, y, angleCount, size) {
         this.x = x
@@ -28,6 +30,8 @@ export default class Polygon {
         })
         
         let point = {x: -this.points[0].x, y: -this.points[0].y}
+
+        this.rect = new Rectangle(0, 0, this.size, this.size)
     }
 
     setSpeed(x, y) {
