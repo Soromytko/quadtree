@@ -1,16 +1,16 @@
 import Rectangle from "./rectangle"
 import Circle from "./circle"
-import QuadTree, { treeCount } from "./quad-tree"
+import QuadTree from "./quad-tree"
 import Polygon from "./polygon"
 
 //config
 // var shapeCount = 300
-var shapeCount = 500
-var shapeSize = 2
+var shapeCount = 200
+var shapeSize = 3
 var shapeSpeed = 1
 var circlesEnable = true
 var trianglesEnable = true
-var pentagonEnable = false
+var pentagonEnable = true
 var isQuadTreeCollision = true
 var collisionFuncPtr = isQuadTreeCollision ? quadTreeCollision : lazyCollision
 var isDrawTree = false
@@ -96,6 +96,14 @@ function draw(tFrame) {
     if (isDrawTree) {
         drawTree(tree)
     }
+
+    let shapeCount = gameState.circles.length + gameState.polygons.length
+
+    context.fillStyle = "blue"
+    context.font = "bold 16px Arial"
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.fillText(shapeCount, 30, 30)
 }
 
 function isCirclePolygonIntersects(circle, triangle) {
@@ -143,6 +151,22 @@ function resolveCollision(figure1, figure2) {
 
     figure1.takeDamage()
     figure2.takeDamage()
+}
+
+function processDeletionQueue() {
+    gameState.circleDeletionQueue.forEach(circle => {
+        let index = gameState.circles.indexOf(circle)
+        if (index > 0)
+        gameState.circles.splice(index, 1)
+    })
+    gameState.circleDeletionQueue = []
+
+    gameState.polygonDeletionQueue.forEach(polygon => {
+        let index = gameState.polygons.indexOf(polygon)
+        if (index > 0)
+        gameState.polygons.splice(index, 1)
+    })
+    gameState.polygonDeletionQueue = []
 }
 
 function lazyCollision() {
@@ -223,25 +247,44 @@ function quadTreeCollision() {
     gameState.circles.forEach(circle => tree.insert(circle))
     gameState.polygons.forEach(polygon => tree.insert(polygon))
 
+    processDeletionQueue()
+
     tree.findIntersections((shape1, shape2) => {
         if (shape1 instanceof Circle && shape2 instanceof Circle) {
             if (shape1.intersects(shape2)) {
                 resolveCollision(shape1, shape2)
+                if (shape1.health <= 0)
+                    gameState.circleDeletionQueue.push(gameState.circles.indexOf(shape1))
+                if (shape2.health <= 0)
+                    gameState.circleDeletionQueue.push(gameState.circles.indexOf(shape2))
+
                 // console.log("circle vs circle collision")
             }
         } else if (shape1 instanceof Polygon && shape2 instanceof Polygon) {
             if (shape1.intersects(shape2)) {
                 resolveCollision(shape1, shape2)
                 // console.log("polygon vs polygon collision")
+                if (shape1.health <= 0)
+                    gameState.polygonDeletionQueue.push(shape1)
+                if (shape2.health <= 0)
+                    gameState.polygonDeletionQueue.push(shape2)
             }
         } else if (shape1 instanceof Circle && shape2 instanceof Polygon) {
             if (isCirclePolygonIntersects(shape1, shape2)) {
                 resolveCollision(shape1, shape2)
                 // console.log("circle vs polygon collision")
+                if (shape1.health <= 0)
+                    gameState.circleDeletionQueue.push(shape1)
+                if (shape2.health <= 0)
+                    gameState.polygonDeletionQueue.push(shape2)
             }
         } else if (shape1 instanceof Polygon && shape2 instanceof Circle) {
             if (isCirclePolygonIntersects(shape2, shape1)) {
                 resolveCollision(shape1, shape2)
+                if (shape1.health <= 0)
+                    gameState.polygonDeletionQueue.push(shape1)
+                if (shape2.health <= 0)
+                    gameState.circleDeletionQueue.push(shape2)
                 // console.log("Polygon vs Circle collision")
             }
         }
@@ -351,10 +394,12 @@ function setup() {
         if (pentagonEnable) gameState.polygons.push(pentagon)
     }
 
-    // gameState.rect1 = new Rectangle(100, 100, 923, 293)
-    // gameState.rect1.color = "blue"
-    // gameState.rect2 = new Rectangle(0, 0, 40, 60)
-    // gameState.rect2.color = "green"
+    gameState.circleDeletionQueue = []
+    gameState.polygonDeletionQueue = []
+
+    // gameState.deletionQueue = []
+    // deletionQueue.push({objectsQueue: gameState.circles, indicesQueue: []})
+    // deletionQueue.push({objectsQueue: gameState.polygons, indicesQueue: []})
 }
 
 setup();

@@ -1,4 +1,3 @@
-import { chdir } from 'process'
 import Rectangle from './rectangle'
 
 export default class QuadTree {
