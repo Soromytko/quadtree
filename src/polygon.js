@@ -2,8 +2,8 @@ import Rectangle from "./rectangle"
 
 export default class Polygon {
     constructor(x, y, angleCount, size) {
-        this.x = x
-        this.y = y
+        this._x = x
+        this._y = y
         this.points = []
         this.size = size
         for (let i = 0; i < angleCount; i++) {
@@ -31,7 +31,29 @@ export default class Polygon {
         
         let point = {x: -this.points[0].x, y: -this.points[0].y}
 
-        this.rect = new Rectangle(0, 0, this.size, this.size)
+        this._rect = new Rectangle(x - size, y - size, size * 2, size * 2)
+    }
+
+    get x() {
+        return this._x
+    }
+
+    set x(value) {
+        this._x = value
+        this._rect.x = this._x
+    }
+    
+    get y() {
+        return this._y
+    }
+    
+    set y(value) {
+        this._y = value
+        this._rect.y = value
+    }
+    
+    get rect() {
+        return this._rect
     }
 
     setSpeed(x, y) {
@@ -45,8 +67,8 @@ export default class Polygon {
         else if (this.health == 1) this.color = "red"
     }
 
-    //Алгоритм определения положения точки относительно вектора
-    //https://gamedev.ru/code/forum/?id=49696
+    // Algorithm for determining the position of a point relative to a vector
+    // https://gamedev.ru/code/forum/?id=49696
     contains(point) {
         let localPoint = {
             x: point.x - this.x,
@@ -54,8 +76,8 @@ export default class Polygon {
         }
 
         for (let i = 0; i < this._vectors.length; i++) {
-            //dot (https://uookn-kursk.ru/wp-content/uploads/5/f/8/5f8ed75a8563d5fb8ccf7b0a607be941.jpeg)
-            //i * (y1 * z1 - y2 * x2) - j * (x1 * z1 - x2 * z2) + k * (x1 * y2 - x2 * y1)
+            // dot (https://uookn-kursk.ru/wp-content/uploads/5/f/8/5f8ed75a8563d5fb8ccf7b0a607be941.jpeg)
+            // i * (y1 * z1 - y2 * x2) - j * (x1 * z1 - x2 * z2) + k * (x1 * y2 - x2 * y1)
             let x1 = this._vectors[i].x
             let y1 = this._vectors[i].y
             let x2 = localPoint.x - this.points[i].x
@@ -70,24 +92,21 @@ export default class Polygon {
         return true
     }
 
-    containsAnyPoint(triangle) {
-        let result = false
-        triangle.points.forEach(point => {
+    containsAnyPoint(polygon) {
+        for (let i = 0; i < polygon.points.length; i++) {
             let globalPoint = {
-                x: point.x + triangle.x,
-                y: point.y + triangle.y,
+                x: polygon.points[i].x + polygon.x,
+                y: polygon.points[i].y + polygon.y,
             }
             if (this.contains(globalPoint)) {
-                result = true
-                return
+                return true
             }
-        })
-
-        return result
+        }
+        return false
     }
 
-    intersects(triangle) {
-        return this.containsAnyPoint(triangle) ||
-                triangle.containsAnyPoint(this)
+    intersects(polygon) {
+        // two polygons are intersects when one of them contains a point of the other
+        return this.containsAnyPoint(polygon) || polygon.containsAnyPoint(this)
     }
 }

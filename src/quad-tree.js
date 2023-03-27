@@ -1,3 +1,4 @@
+import { chdir } from 'process'
 import Rectangle from './rectangle'
 
 export default class QuadTree {
@@ -16,38 +17,33 @@ export default class QuadTree {
         this._hasChildren = false
         this._children = []
 
-        this.maxDepth = 3
+        this.maxDepth = 10
         this.depth
     }
 
     // todo
     insert(shape, depth = 0) {
-        // if (!this._boundary.contains(shape)) {
         this.depth = depth
         if (!this._boundary.containsRect(shape.rect)) {
             return false
         }
 
         if (this._hasChildren) {
-            for (let i in this._children) {
-                if (this._children[i].insert(shape, depth + 1)) {
-                    return true
-                }
+            if (!this._insertIntoChildren(shape)) {
+                this._shapes.push(shape)
             }
+            return true
         } else {
             if (depth >= this.maxDepth || this._shapes.length < this._capacity) {
                 this._shapes.push(shape)
                 return true
             } else {
                 this._subdivide()
-                return this.insert(shape, depth)
+                if (this.insert(shape, depth)) {
+                    return true
+                }
             }
         }
-
-        // if (this._children[0].insert(shape) || this._children[1].insert(shape) ||
-        //     this._children[2].insert(shape) || this._children[3].insert(shape)) {
-        //     return true
-        // }
 
         return false
     }
@@ -63,8 +59,63 @@ export default class QuadTree {
         return count
     }
 
+    getValues() {
+        let result = []
+        this._shapes.forEach(shape => {
+            result.push(shape)
+        })
+        
+        this._children.forEach(child => {
+            let r = child.getValues()
+            r.forEach(value => result.push(value))
+        })
+
+        return result
+    }
+
     queryRange(rect, found = []) {
         return found
+    }
+
+    findIntersections(predicate) {
+        // Find intersections in the current node
+        for (let i = 0; i < this._shapes.length; i++) {
+            let shape1 = this._shapes[i]
+            for (let j = 0; j < i; j++) {
+                let shape2 = this._shapes[j]
+                if (shape1.rect.intersects(shape2.rect)) {
+                    predicate(shape1, shape2)
+                }
+            }
+
+        }
+
+        if (this._hasChildren) {
+            this._children.forEach(child => {
+                for(let i = 0; i < this._shapes.length; i++) {
+                    child._findIntersictionsInDescendants(this._shapes[i], predicate)
+                }
+            })
+    
+            this._children.forEach(child => {
+                child.findIntersections(predicate)
+            })
+        }
+    }
+
+    _findIntersictionsInDescendants(shape, predicate) {
+        let shape1 = shape
+        for (let i = 0; i < this._shapes.length; i++) {
+            let shape2 = this._shapes[i]
+            if (shape1.rect.intersects(shape2.rect)) {
+                predicate(shape1, shape2)
+            }
+        }
+
+        if (this._hasChildren)
+        this._children.forEach(child => {
+            child._findIntersictionsInDescendants(shape, predicate)
+        })
     }
 
     // todo call if the number of elements is too big
@@ -78,27 +129,22 @@ export default class QuadTree {
         this._children.push(new QuadTree(new Rectangle(boundary.x, boundary.y + hHalf, wHalf, hHalf)))
         this._hasChildren = true
 
-        // for(let i = 0; i < this._shapes.length; i++) {
-        //     for (let j = 0; j < this._children.length; j++) {
-        //         this._children[j].insert(this._shapes[i])
-        //     }
-        // }
-
         var newValues = []
         this._shapes.forEach(shape => {
-            let b = false
-            for (let i = 0; i < this._children.length; i++) {
-                if (this._children[i].insert(shape, this.depth + 1)) {
-                    b = true
-                    break
-                }
-            }
-            if (!b) {
+            if (!this._insertIntoChildren(shape)) {
                 newValues.push(shape)
             }
         })
-        if (this.depth == 0) console.log(newValues.length)
         this._shapes = newValues
+    }
+
+    _insertIntoChildren(shape) {
+        for (let i = 0; i < this._children.length; i++) {
+            if (this._children[i].insert(shape, this.depth + 1)) {
+                return true
+            }
+        }
+        return false
     }
 
     clear() {

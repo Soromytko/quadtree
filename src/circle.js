@@ -2,15 +2,37 @@ import Rectangle from "./rectangle"
 
 export default class Circle {
     constructor(x, y, radius) {
-        this.x = x
-        this.y = y
+        this._x = x
+        this._y = y
         this.radius = radius
         
         this.color = "green"
         this.health = 3
         this.speed = {x: 0, y: 0}
 
-        this.rect = new Rectangle(0, 0, this.radius * 2, this.radius * 2)
+        this._rect = new Rectangle(x - radius, y - radius, radius * 2, radius * 2)
+    }
+
+    get x() {
+        return this._x
+    }
+    
+    set x(value) {
+        this._x = value
+        this._rect.x = value
+    }
+    
+    get y() {
+        return this._y
+    }
+    
+    set y(value) {
+        this._y = value
+        this._rect.y = value
+    }
+
+    get rect() {
+        return this._rect
     }
 
     setSpeed(x, y) {
@@ -25,5 +47,10 @@ export default class Circle {
 
     contains(point) {
         return point.x - this.x <= radius && point.y - this.y <= radius
+    }
+
+    intersects(circle) {
+        return Math.sqrt(Math.pow(circle.x - this._x, 2) + Math.pow(circle.y - this._y, 2)) <=
+                circle.radius + this.radius
     }
 }

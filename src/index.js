@@ -1,10 +1,20 @@
 import Rectangle from "./rectangle"
 import Circle from "./circle"
-import QuadTree from "./quad-tree"
-import Polygon from "./polygon";
+import QuadTree, { treeCount } from "./quad-tree"
+import Polygon from "./polygon"
 
+//config
+// var shapeCount = 300
+var shapeCount = 500
+var shapeSize = 2
+var shapeSpeed = 1
+var circlesEnable = true
+var trianglesEnable = true
+var pentagonEnable = false
 var isQuadTreeCollision = true
 var collisionFuncPtr = isQuadTreeCollision ? quadTreeCollision : lazyCollision
+var isDrawTree = false
+//
 
 const canvas = document.getElementById("cnvs")
 canvas.width = window.innerWidth
@@ -12,7 +22,7 @@ canvas.height = window.innerHeight
 const context = canvas.getContext('2d')
 
 const gameState = {};
-var tree = new QuadTree(new Rectangle(0, 0, canvas.width, canvas.height))
+var tree = new QuadTree(new Rectangle(0, 0, canvas.width, canvas.height), 4)
 
 function queueUpdates(numTicks) {
     for (let i = 0; i < numTicks; i++) {
@@ -32,14 +42,11 @@ function drawTree(tree) {
         drawTree(tree._children[2])
         drawTree(tree._children[3])
     }
-        
 }
     
 function draw(tFrame) {
-        
-    // clear canvas
     context.clearRect(0, 0, canvas.width, canvas.height)
-    // draw
+
     gameState.rects.forEach(rect =>{
         context.fillStyle = rect.color
         context.fillRect(rect.x, rect.y, rect.w, rect.h)
@@ -74,13 +81,32 @@ function draw(tFrame) {
     context.fillRect(gameState.debugPoint.x, gameState.debugPoint.y, 5, 5)
     context.closePath()
 
-    drawTree(tree)
+    // gameState.rect2.color = "green"
+    // if (gameState.rect1.containsRect(gameState.rect2)) {
+    //     gameState.rect2.color = "red"
+    // }
+        
+    // gameState.rect2.x = gameState.cursor.x
+    // gameState.rect2.y = gameState.cursor.y
+    // context.fillStyle = gameState.rect1.color
+    // context.fillRect(gameState.rect1.x, gameState.rect1.y, gameState.rect1.w, gameState.rect1.h)
+    // context.fillStyle = gameState.rect2.color
+    // context.fillRect(gameState.rect2.x, gameState.rect2.y, gameState.rect2.w, gameState.rect2.h)
+
+    if (isDrawTree) {
+        drawTree(tree)
+    }
 }
 
-//the algorithm is borrowed from:
-//https://math.stackexchange.com/questions/311921/get-location-of-vector-circle-intersection
 function isCirclePolygonIntersects(circle, triangle) {
+    // first check AABB at the intersection for optimization
+    if (!circle.rect.intersects(triangle.rect)) {
+        return false
+    }
+
     for (let i = 0; i < triangle.points.length; i++) {
+        // the algorithm is borrowed from:
+        // https://math.stackexchange.com/questions/311921/get-location-of-vector-circle-intersection
         let p = {x: triangle.points[i].x, y: triangle.points[i].y}
         let v = triangle._vectors[i]
 
@@ -120,21 +146,26 @@ function resolveCollision(figure1, figure2) {
 }
 
 function lazyCollision() {
+    // first check AABB at the intersection for optimization
+    let isAabbIntersects = (shape1, shape2) => shape1.rect.intersects(shape2.rect)
+
     // circle vs circle
     for (let i = 0; i < gameState.circles.length - 1; i++) {
         let circle1 = gameState.circles[i]
         for (let j = i + 1; j < gameState.circles.length; j++) {
             let circle2 = gameState.circles[j]
-            if (Math.abs(circle1.x - circle2.x) <= circle1.radius + circle2.radius && 
-                Math.abs(circle1.y - circle2.y) <= circle1.radius + circle2.radius) {
-                resolveCollision(circle1, circle2)
-                if (circle1.health <= 0) {
-                    gameState.circles.splice(i, 1)
-                    i -= 0
-                }
-                if (circle2.health <= 0) {
-                    gameState.circles.splice(j, 1)
-                    j -= 1
+            if (isAabbIntersects(circle1, circle2)) {
+                if (circle1.intersects(circle2)) {
+                    resolveCollision(circle1, circle2)
+                    if (circle2.health <= 0) {
+                        gameState.circles.splice(j, 1)
+                        j -= 1
+                    }
+                    if (circle1.health <= 0) {
+                        gameState.circles.splice(i, 1)
+                        i -= 0
+                        break
+                    }
                 }
             }
         }
@@ -142,18 +173,21 @@ function lazyCollision() {
 
     //polygon vs polygon
     for (let i = 0; i < gameState.polygons.length - 1; i++) {
+        let polygon1 = gameState.polygons[i]
         for (let j = i + 1; j < gameState.polygons.length; j++) {
-            let polygon1 = gameState.polygons[i]
             let polygon2 = gameState.polygons[j]
-            if (polygon1.intersects(polygon2)) {
-                resolveCollision(polygon1, polygon2)
-                if (polygon1.health <= 0) {
-                    gameState.polygons.splice(i, 1)
-                    i -= 1
-                }
-                if (polygon2.health <= 0) {
-                    gameState.polygons.splice(j, 1)
-                    j -= 1
+            if (isAabbIntersects(polygon1, polygon2)) {
+                if (polygon1.intersects(polygon2)) {
+                    resolveCollision(polygon1, polygon2)
+                    if (polygon2.health <= 0) {
+                        gameState.polygons.splice(j, 1)
+                        j -= 1
+                    }
+                    if (polygon1.health <= 0) {
+                        gameState.polygons.splice(i, 1)
+                        i -= 1
+                        break
+                    }
                 }
             }
         }
@@ -164,15 +198,18 @@ function lazyCollision() {
         let circle = gameState.circles[i]
         for (let j = 0; j < gameState.polygons.length; j++) {
             let polygon = gameState.polygons[j]
-            if (isCirclePolygonIntersects(circle, polygon)) {
-                resolveCollision(circle, polygon)
-                if (circle.health <= 0) {
-                    gameState.circles.splice(i, 1)
-                    i -= 1
-                }
-                if (polygon.health <= 0) {
-                    gameState.polygons.splice(j, 1)
-                    j -= 1
+            if (isAabbIntersects(circle, polygon)) {
+                if (isCirclePolygonIntersects(circle, polygon)) {
+                    resolveCollision(circle, polygon)
+                    if (polygon.health <= 0) {
+                        gameState.polygons.splice(j, 1)
+                        j -= 1
+                    }
+                    if (circle.health <= 0) {
+                        gameState.circles.splice(i, 1)
+                        i -= 1
+                        break
+                    }
                 }
             }
         }
@@ -180,9 +217,35 @@ function lazyCollision() {
 }
 
 function quadTreeCollision() {
+    // QuadTree.valueCount = 0
     tree.clear()
+
     gameState.circles.forEach(circle => tree.insert(circle))
     gameState.polygons.forEach(polygon => tree.insert(polygon))
+
+    tree.findIntersections((shape1, shape2) => {
+        if (shape1 instanceof Circle && shape2 instanceof Circle) {
+            if (shape1.intersects(shape2)) {
+                resolveCollision(shape1, shape2)
+                // console.log("circle vs circle collision")
+            }
+        } else if (shape1 instanceof Polygon && shape2 instanceof Polygon) {
+            if (shape1.intersects(shape2)) {
+                resolveCollision(shape1, shape2)
+                // console.log("polygon vs polygon collision")
+            }
+        } else if (shape1 instanceof Circle && shape2 instanceof Polygon) {
+            if (isCirclePolygonIntersects(shape1, shape2)) {
+                resolveCollision(shape1, shape2)
+                // console.log("circle vs polygon collision")
+            }
+        } else if (shape1 instanceof Polygon && shape2 instanceof Circle) {
+            if (isCirclePolygonIntersects(shape2, shape1)) {
+                resolveCollision(shape1, shape2)
+                // console.log("Polygon vs Circle collision")
+            }
+        }
+    })
 }
 
 function update(tick) {
@@ -269,24 +332,29 @@ function setup() {
     gameState.rects = []
     gameState.circles = []
     gameState.polygons = []
-    for(let i = 0; i < 0; i++) {
-        let rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), 10, 10)
-        let circle = new Circle(random(0, canvas.width), random(0, canvas.height), 10)
-        let triangle = new Polygon(random(0, canvas.width), random(0, canvas.height), 3, 10)
-        let pentagon = new Polygon(random(0, canvas.width), random(0, canvas.height), 5, 10)
+    for(let i = 0; i < shapeCount; i++) {
+        let size = shapeSize
+        let rect = new Rectangle(random(0, canvas.width), random(0, canvas.height), size, size)
+        let circle = new Circle(random(0, canvas.width), random(0, canvas.height), size)
+        let triangle = new Polygon(random(0, canvas.width), random(0, canvas.height), 3, size)
+        let pentagon = new Polygon(random(0, canvas.width), random(0, canvas.height), 5, size)
         
-        let speed = 0
-
+        let speed = shapeSpeed
         rect.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
         circle.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
         triangle.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
         pentagon.setSpeed(rendomWithExcluded(-speed, speed), rendomWithExcluded(-speed, speed))
         
         // gameState.rects.push(rect)
-        gameState.circles.push(circle)
-        gameState.polygons.push(triangle)
-        gameState.polygons.push(pentagon)
+        if (circlesEnable) gameState.circles.push(circle)
+        if (trianglesEnable) gameState.polygons.push(triangle)
+        if (pentagonEnable) gameState.polygons.push(pentagon)
     }
+
+    // gameState.rect1 = new Rectangle(100, 100, 923, 293)
+    // gameState.rect1.color = "blue"
+    // gameState.rect2 = new Rectangle(0, 0, 40, 60)
+    // gameState.rect2.color = "green"
 }
 
 setup();
