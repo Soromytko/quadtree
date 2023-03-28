@@ -87,19 +87,14 @@ export default class QuadTree {
                 }
             }
 
+            this._children.forEach(child => {
+                child._findIntersictionsInDescendants(this._shapes[i], predicate)
+            })
         }
 
-        if (this._hasChildren) {
-            this._children.forEach(child => {
-                for(let i = 0; i < this._shapes.length; i++) {
-                    child._findIntersictionsInDescendants(this._shapes[i], predicate)
-                }
-            })
-    
-            this._children.forEach(child => {
-                child.findIntersections(predicate)
-            })
-        }
+        this._children.forEach(child => {
+            child.findIntersections(predicate)
+        })
     }
 
     _findIntersictionsInDescendants(shape, predicate) {
