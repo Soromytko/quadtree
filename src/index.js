@@ -5,8 +5,8 @@ import Polygon from "./polygon"
 
 //config
 // var shapeCount = 300
-var shapeCount = 200
-var shapeSize = 3
+var shapeCount = 300 // x3
+var shapeSize = 5
 var shapeSpeed = 1
 var circlesEnable = true
 var trianglesEnable = true
@@ -46,6 +46,8 @@ function drawTree(tree) {
     
 function draw(tFrame) {
     context.clearRect(0, 0, canvas.width, canvas.height)
+    // context.fillStyle = "black"
+    // context.fillRect(0, 0, canvas.width, canvas.height)
 
     gameState.rects.forEach(rect =>{
         context.fillStyle = rect.color
@@ -76,34 +78,27 @@ function draw(tFrame) {
     // context.fillRect(gameState.cursor.x, gameState.cursor.y, 5, 5)
     // context.closePath()
 
-    context.beginPath()
-    context.fillStyle = "red"
-    context.fillRect(gameState.debugPoint.x, gameState.debugPoint.y, 5, 5)
-    context.closePath()
-
-    // gameState.rect2.color = "green"
-    // if (gameState.rect1.containsRect(gameState.rect2)) {
-    //     gameState.rect2.color = "red"
-    // }
-        
-    // gameState.rect2.x = gameState.cursor.x
-    // gameState.rect2.y = gameState.cursor.y
-    // context.fillStyle = gameState.rect1.color
-    // context.fillRect(gameState.rect1.x, gameState.rect1.y, gameState.rect1.w, gameState.rect1.h)
-    // context.fillStyle = gameState.rect2.color
-    // context.fillRect(gameState.rect2.x, gameState.rect2.y, gameState.rect2.w, gameState.rect2.h)
-
-    if (isDrawTree) {
+    if (isQuadTreeCollision && isDrawTree) {
         drawTree(tree)
     }
 
-    let shapeCount = gameState.circles.length + gameState.polygons.length
-
+    let currentShapeCount = gameState.circles.length + gameState.polygons.length
     context.fillStyle = "blue"
     context.font = "bold 16px Arial"
-    context.textAlign = 'center'
+    context.textAlign = 'left'
     context.textBaseline = 'middle'
-    context.fillText(shapeCount, 30, 30)
+    context.fillText("max: " + shapeCount * 3, 30, 30)
+    context.fillText("now: " + currentShapeCount, 30, 50)
+
+    gameState.buttons.forEach(button => {
+        context.fillStyle = button.rect.color
+        context.fillRect(button.rect.x, button.rect.y, button.rect.w, button.rect.h)
+        context.fillStyle = "black"
+        context.font = "bold 16px Arial"
+        context.textAlign = 'center'
+        context.textBaseline = 'middle'
+        context.fillText(button.text, button.rect.x + button.rect.w / 2, button.rect.y + button.rect.h / 2)
+    })
 }
 
 function isCirclePolygonIntersects(circle, triangle) {
@@ -244,21 +239,20 @@ function quadTreeCollision() {
     // QuadTree.valueCount = 0
     tree.clear()
 
+    processDeletionQueue()
+
     gameState.circles.forEach(circle => tree.insert(circle))
     gameState.polygons.forEach(polygon => tree.insert(polygon))
-
-    processDeletionQueue()
 
     tree.findIntersections((shape1, shape2) => {
         if (shape1 instanceof Circle && shape2 instanceof Circle) {
             if (shape1.intersects(shape2)) {
                 resolveCollision(shape1, shape2)
+                // console.log("circle vs circle collision")
                 if (shape1.health <= 0)
                     gameState.circleDeletionQueue.push(gameState.circles.indexOf(shape1))
                 if (shape2.health <= 0)
                     gameState.circleDeletionQueue.push(gameState.circles.indexOf(shape2))
-
-                // console.log("circle vs circle collision")
             }
         } else if (shape1 instanceof Polygon && shape2 instanceof Polygon) {
             if (shape1.intersects(shape2)) {
@@ -292,10 +286,6 @@ function quadTreeCollision() {
 }
 
 function update(tick) {
-
-    // collision()
-    // console.log(tree.length)
-
     collisionFuncPtr()
 
     gameState.rects.forEach((figure)=>{
@@ -359,19 +349,18 @@ function rendomWithExcluded(min, max, excludedValue) {
     }
 }
 
-function setup() {
-    canvas.addEventListener("click", (e) => {
-        gameState.circles.push(new Circle(e.offsetX, e.offsetY, 10))
-    }, false)
+function onClickEvent(event) {
+    // gameState.circles.push(new Circle(e.offsetX, e.offsetY, 10))
 
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-    gameState.lastTick = performance.now()
-    gameState.lastRender = gameState.lastTick
-    gameState.tickLength = 15 //ms
+    let point = {x: event.offsetX, y: event.offsetY}
+    gameState.buttons.forEach(button => {
+        if (button.rect.contains(point)) {
+            button.onClick(button)
+        }
+    })
+}
 
-    gameState.cursor = {x: 50, y: 50}
-    gameState.debugPoint = {x: 0, y: 0}
+function spawn() {
     gameState.rects = []
     gameState.circles = []
     gameState.polygons = []
@@ -396,10 +385,45 @@ function setup() {
 
     gameState.circleDeletionQueue = []
     gameState.polygonDeletionQueue = []
+}
 
-    // gameState.deletionQueue = []
-    // deletionQueue.push({objectsQueue: gameState.circles, indicesQueue: []})
-    // deletionQueue.push({objectsQueue: gameState.polygons, indicesQueue: []})
+function setup() {
+    canvas.addEventListener("click", onClickEvent, false)
+
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+    gameState.lastTick = performance.now()
+    gameState.lastRender = gameState.lastTick
+    gameState.tickLength = 15 //ms
+
+    gameState.cursor = {x: 50, y: 50}
+    
+    spawn()
+
+    gameState.buttons = []
+    
+    gameState.buttons.push({rect: new Rectangle(canvas.width - 125, 25, 100, 25), text: "Quadtree", onClick: (self) => {
+        isQuadTreeCollision = !isQuadTreeCollision
+        collisionFuncPtr = isQuadTreeCollision ? quadTreeCollision : lazyCollision
+        self.text = isQuadTreeCollision ? "Quadtree" : "Lazy" 
+    }, })
+    gameState.buttons.push({rect: new Rectangle(canvas.width - 125, 25 + 50 - 12, 100, 25), text: "Show Tree", onClick: (self) => {
+        isDrawTree = !isDrawTree
+        self.text = isDrawTree ? "Hide tree" : "Show tree"
+    }, })
+    gameState.buttons.push({rect: new Rectangle(canvas.width - 125, 25 + 50 - 12 + 50 - 12, 45, 25), text: "-", onClick: (self) => {
+       shapeCount -= 100
+       if (shapeCount <= 0) shapeCount = 0
+    }, })
+    gameState.buttons.push({rect: new Rectangle(canvas.width - 125 + 55, 25 + 50 - 12 + 50 - 12, 45, 25), text: "+", onClick: (self) => {
+        shapeCount += 100
+    }, })
+    gameState.buttons.push({rect: new Rectangle(canvas.width - 125, 200, 100, 25), text: "Restart", onClick: (self) => {
+        spawn()
+    }, })
+
+    gameState.buttons.forEach(button => button.rect.color = "gray")
+
 }
 
 setup();
