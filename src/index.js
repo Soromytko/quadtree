@@ -250,9 +250,9 @@ function quadTreeCollision() {
                 resolveCollision(shape1, shape2)
                 // console.log("circle vs circle collision")
                 if (shape1.health <= 0)
-                    gameState.circleDeletionQueue.push(gameState.circles.indexOf(shape1))
+                    gameState.circleDeletionQueue.push(shape1)
                 if (shape2.health <= 0)
-                    gameState.circleDeletionQueue.push(gameState.circles.indexOf(shape2))
+                    gameState.circleDeletionQueue.push(shape2)
             }
         } else if (shape1 instanceof Polygon && shape2 instanceof Polygon) {
             if (shape1.intersects(shape2)) {
