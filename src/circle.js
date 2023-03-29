@@ -46,11 +46,11 @@ export default class Circle {
     }
 
     contains(point) {
-        return point.x - this.x <= radius && point.y - this.y <= radius
+        return Math.pow(point.x - this.x, 2) + Math.pow(point.y - this.y, 2) < this.radius * this.radius
     }
 
     intersects(circle) {
-        return Math.sqrt(Math.pow(circle.x - this._x, 2) + Math.pow(circle.y - this._y, 2)) <=
-                circle.radius + this.radius
+        return Math.sqrt(Math.pow(circle.x - this._x, 2) +
+            Math.pow(circle.y - this._y, 2)) < circle.radius + this.radius
     }
 }
